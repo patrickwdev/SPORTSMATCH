@@ -1,9 +1,9 @@
-name: Sync ESPN live scores (NFL, MLB, NHL, MLS)
+name: Sync ESPN live scores (basketball)
 
 on:
   schedule:
-    # Every 3 minutes — NFL, MLB, NHL, MLS scores/status
-    - cron: '*/3 * * * *'
+    # Every 1 minute — NBA, WNBA, NCAAB, NCAAW scores/status
+    - cron: '* * * * *'
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        league: [NFL, MLB, NHL, MLS]
+        league: [NBA, WNBA, NCAAB, NCAAW]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
