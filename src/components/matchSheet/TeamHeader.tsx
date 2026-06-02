@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
-import type { Match } from '../../types';
+import type { Match, Sport } from '../../types';
 import { colors } from '../../theme/colors';
 import { TeamBadge } from '../TeamBadge';
 
@@ -7,8 +7,9 @@ interface Props {
   match: Match;
 }
 
-function RecordTable({ record }: { record: Match['awayTeam']['record'] }) {
-  const headers = ['Overall', 'Win %', 'Points', 'Streak'];
+function RecordTable({ record, sport }: { record: Match['awayTeam']['record']; sport: Sport }) {
+  const pointsHeader = sport === 'NHL' ? 'PTS/G' : 'Points';
+  const headers = ['Overall', 'Win %', pointsHeader, 'Streak'];
   const values = [record.overall, record.winPct, record.points, record.streak];
   return (
     <View style={styles.table}>
@@ -38,7 +39,7 @@ export function TeamHeader({ match }: Props) {
           <TeamBadge team={match.awayTeam} size="lg" />
           <Text style={styles.teamName}>{match.awayTeam.name}</Text>
         </View>
-        <RecordTable record={match.awayTeam.record} />
+        <RecordTable record={match.awayTeam.record} sport={match.sport} />
       </View>
       <View style={styles.divider} />
       <View style={styles.half}>
@@ -46,7 +47,7 @@ export function TeamHeader({ match }: Props) {
           <Text style={styles.teamName}>{match.homeTeam.name}</Text>
           <TeamBadge team={match.homeTeam} size="lg" />
         </View>
-        <RecordTable record={match.homeTeam.record} />
+        <RecordTable record={match.homeTeam.record} sport={match.sport} />
       </View>
     </View>
   );

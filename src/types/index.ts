@@ -1,4 +1,4 @@
-export type Sport = 'NFL' | 'MLB' | 'MLS' | 'NBA' | 'NHL' | 'WNBA';
+export type Sport = 'NFL' | 'MLB' | 'MLS' | 'NBA' | 'NHL' | 'WNBA' | 'NCAAB' | 'NCAAW';
 
 export type GameStatus =
   | 'scheduled'
@@ -31,12 +31,12 @@ export interface StatRow {
   id: string;
   label: string;
   awaySeason: number;
-  awaySplit: number;
-  awayLast5: number;
+  awaySplit: number | null;
+  awayLast5: number | null;
   awayL5Rank: number;
   homeSeason: number;
-  homeSplit: number;
-  homeLast5: number;
+  homeSplit: number | null;
+  homeLast5: number | null;
   homeL5Rank: number;
   /** true = away has advantage, false = home, null = tie */
   awayAdvantage: boolean | null;

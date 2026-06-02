@@ -1,7 +1,7 @@
 import { fetchEspnTeamLookup, type EspnTeamTable } from './espnTeamCache';
 import type { Sport } from '../types';
 
-export type EspnCachedSport = 'NFL' | 'MLB' | 'NBA' | 'NHL' | 'MLS' | 'WNBA';
+export type EspnCachedSport = 'NFL' | 'MLB' | 'NBA' | 'NHL' | 'MLS' | 'WNBA' | 'NCAAB' | 'NCAAW';
 
 export type { EspnTeamTable };
 
@@ -15,6 +15,8 @@ export const ESPN_CACHED_SPORTS: Record<
   NHL: { idPattern: 'espn-nhl-%', teamsTable: 'nhl_teams' },
   MLS: { idPattern: 'espn-mls-%', teamsTable: 'mls_teams' },
   WNBA: { idPattern: 'espn-wnba-%', teamsTable: 'wnba_teams' },
+  NCAAB: { idPattern: 'espn-ncaab-%', teamsTable: 'ncaab_teams' },
+  NCAAW: { idPattern: 'espn-ncaaw-%', teamsTable: 'ncaaw_teams' },
 };
 
 export function isEspnCachedSport(sport: Sport): sport is EspnCachedSport {

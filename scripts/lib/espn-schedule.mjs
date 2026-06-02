@@ -6,6 +6,7 @@ import {
   weekLabelForDate,
 } from './dates.mjs';
 import { applyTeamLookup, teamColor } from './espn-team-utils.mjs';
+import { winPctFromRecordSummary } from './espn-team-record.mjs';
 
 /** @param {string} espnStatusName */
 export function mapGameStatus(espnStatusName) {
@@ -38,29 +39,29 @@ export function mapGameStatus(espnStatusName) {
   }
 }
 
-/** @param {Array<{ type?: string; summary?: string }> | undefined} records */
-function parseRecord(records) {
+/** @param {Array<{ type?: string; summary?: string }> | undefined} records @param {string} sport */
+function parseRecord(records, sport) {
   const overall =
     records?.find((r) => r.type === 'total')?.summary ??
     records?.[0]?.summary ??
     '—';
   return {
     overall,
-    winPct: '—',
+    winPct: winPctFromRecordSummary(overall, sport),
     points: '—',
     streak: '—',
   };
 }
 
-/** @param {object} competitor @param {Map<string, object> | undefined} teamLookup */
-function mapTeam(competitor, teamLookup) {
+/** @param {object} competitor @param {Map<string, object> | undefined} teamLookup @param {string} sportKey */
+function mapTeam(competitor, teamLookup, sportKey) {
   const team = competitor.team ?? {};
   const base = {
     id: String(team.id ?? competitor.id ?? team.abbreviation ?? 'unknown'),
     name: team.displayName ?? team.name ?? 'TBD',
     abbreviation: team.abbreviation ?? '—',
     color: teamColor(team.color),
-    record: parseRecord(competitor.records),
+    record: parseRecord(competitor.records, sportKey),
   };
   return applyTeamLookup(base, teamLookup);
 }
@@ -136,8 +137,8 @@ export function createEspnScheduleApi(config) {
       id: `${idPrefix}-${event.id}`,
       sport,
       espn_event_id: String(event.id),
-      away_team: mapTeam(away, teamLookup),
-      home_team: mapTeam(home, teamLookup),
+      away_team: mapTeam(away, teamLookup, sport),
+      home_team: mapTeam(home, teamLookup, sport),
       start_time: formatStartTime(startIso),
       location: formatLocation(competition.venue),
       week_label: weekLabelForDate(gameDate),
@@ -166,7 +167,11 @@ export function createEspnScheduleApi(config) {
   async function fetchScoreboardForRange(start, end, teamLookup) {
     const startParam = toEspnDateParam(start);
     const endParam = toEspnDateParam(end);
-    const url = `${scoreboardUrl}?dates=${startParam}-${endParam}&limit=200`;
+    // College basketball (and some other ESPN feeds) 404 on `dates=YYYYMMDD-YYYYMMDD`
+    // even when start === end; use a single date param for one-day windows.
+    const datesParam =
+      startParam === endParam ? startParam : `${startParam}-${endParam}`;
+    const url = `${scoreboardUrl}?dates=${datesParam}&limit=200`;
     const res = await fetch(url, {
       headers: { Accept: 'application/json', 'User-Agent': 'sports-match-sync/1.0' },
     });

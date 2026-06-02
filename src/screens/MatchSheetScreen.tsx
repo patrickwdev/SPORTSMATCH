@@ -62,9 +62,7 @@ export function MatchSheetScreen({ route }: Props) {
               <StatsTable match={match} />
             </>
           ) : (
-            <Text style={styles.noStats}>
-              Season stats are not available for ESPN schedule games yet.
-            </Text>
+            <Text style={styles.noStats}>Season stats could not be loaded for this matchup.</Text>
           )}
         </View>
       </ScrollView>

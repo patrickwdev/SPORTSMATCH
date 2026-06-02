@@ -5,7 +5,7 @@
  *   node scripts/sync-espn.mjs MLB
  *   node scripts/sync-espn.mjs NHL --live
  *
- * Leagues: MLB, NBA, NHL, MLS, WNBA
+ * Leagues: MLB, NBA, NHL, MLS, WNBA, NCAAB, NCAAW
  */
 
 import { createClient } from '@supabase/supabase-js';

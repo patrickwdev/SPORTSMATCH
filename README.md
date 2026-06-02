@@ -4,10 +4,10 @@ React Native + Expo app for viewing weekly sports matchups and detailed statisti
 
 ## Features
 
-- **Welcome screen** — League picker (NFL, MLB, MLS, NBA, NHL, WNBA) and navigation to the week’s schedule
+- **Welcome screen** — League picker (NFL, MLB, MLS, NBA, NHL, WNBA, NCAAB, NCAAW) and navigation to the week’s schedule
 - **Matches list** — 7-day picker; games filtered by day
 - **Match sheet** — Dark-themed statistical comparison (team records, info bar, scrollable stats grid)
-- **Team logos** — Cached from ESPN for MLB, NBA, NHL, MLS, WNBA
+- **Team logos** — Cached from ESPN for MLB, NBA, NHL, MLS, WNBA, NCAAB, NCAAW
 - **Supabase backend** — Optional; falls back to local mock data when env vars are not set
 
 ## Run locally
@@ -48,13 +48,13 @@ Without a `.env` file, the app uses bundled mock data in `src/data/mockData.ts`.
 
 Row Level Security allows public read access on `matches` and `*_teams` tables; only seeding/sync requires the service role.
 
-## ESPN schedule cache (MLB, NBA, NHL, MLS, WNBA)
+## ESPN schedule cache (MLB, NBA, NHL, MLS, WNBA, NCAAB, NCAAW)
 
 The app **never** calls ESPN at runtime. Sync jobs pull **teams (logos)** and **games (today + 6 days)** into Supabase; the mobile app only reads your database.
 
 ### One-time setup
 
-1. Apply all migrations through `20240601000006_nfl.sql`.
+1. Apply all migrations through `20240601000007_ncaab_ncaaw.sql`.
 2. Add `SUPABASE_SERVICE_ROLE_KEY` to `.env`.
 3. Sync each league (or all at once):
 
@@ -71,20 +71,27 @@ The app **never** calls ESPN at runtime. Sync jobs pull **teams (logos)** and **
    npm run sync:nhl
    npm run sync:mls
    npm run sync:wnba
+   npm run sync:ncaab
+   npm run sync:ncaaw
    ```
 
 ### Sync commands
 
 | Command | What it does |
 |---------|----------------|
-| `npm run sync:{league}` | Daily — sync teams + 7-day schedule (`league` = nfl, mlb, nba, nhl, mls, wnba) |
+| `npm run sync:{league}` | Daily — sync teams + 7-day schedule (`league` = nfl, mlb, nba, nhl, mls, wnba, ncaab, ncaaw) |
 | `npm run sync:{league}:live` | Live — update today’s scores/status for today |
-| `npm run sync:live:all` | Run live sync for all six leagues (use on a 10‑min timer locally) |
-| `npm run sync:all` | Run daily sync for all six leagues |
+| `npm run sync:live:basketball` | Live — NBA, WNBA, NCAAB, NCAAW (every **1** minute) |
+| `npm run sync:live:other` | Live — NFL, MLB, NHL, MLS (every **3** minutes) |
+| `npm run sync:live:all` | Run both live sync groups above |
+| `npm run sync:all` | Run daily sync for all eight leagues |
 
 Live sync **skips** ESPN when there are no scheduled or in-progress games today (saves API calls on off days).
 
-**Local 10‑minute updates (Windows):** Task Scheduler → repeat every 10 minutes → action: `npm run sync:live:all` in your project folder (with `.env` and service role key set).
+**Local updates (Windows Task Scheduler):** create two tasks in your project folder (with `.env` and service role key set):
+
+- Repeat every **1** minute → `npm run sync:live:basketball`
+- Repeat every **3** minutes → `npm run sync:live:other`
 
 ### Team tables
 
@@ -96,18 +103,30 @@ Live sync **skips** ESPN when there are no scheduled or in-progress games today 
 | NHL | `nhl_teams` | `espn-nhl-{eventId}` |
 | MLS | `mls_teams` | `espn-mls-{eventId}` |
 | WNBA | `wnba_teams` | `espn-wnba-{eventId}` |
+| NCAAB | `ncaab_teams` | `espn-ncaab-{eventId}` |
+| NCAAW | `ncaaw_teams` | `espn-ncaaw-{eventId}` |
 
 ### Automated cron (GitHub Actions)
 
-Add secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`.
+In the repo on GitHub: **Settings → Secrets and variables → Actions → New repository secret**:
 
-- `sync-espn-schedule.yml` — daily 05:00 UTC, all 6 leagues
-- `sync-espn-live.yml` — **every 10 minutes**, all 6 leagues
+| Secret | Value (from your local `.env`) |
+|--------|--------------------------------|
+| `EXPO_PUBLIC_SUPABASE_URL` *or* `SUPABASE_URL` | Same project URL (`https://….supabase.co`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (not the anon key) |
+
+If these are missing or empty, sync workflows fail with “Missing Supabase URL…”.
+
+- `sync-espn-schedule.yml` — daily 05:00 UTC, all 8 leagues
+- `sync-espn-live-basketball.yml` — **every 1 minute**, NBA, WNBA, NCAAB, NCAAW
+- `sync-espn-live.yml` — **every 3 minutes**, NFL, MLB, NHL, MLS
+
+GitHub Actions may delay schedules shorter than 5 minutes; use Task Scheduler locally for exact 1‑ and 3‑minute intervals.
 
 ### Notes
 
 - ESPN API is unofficial (`site.api.espn.com`); treat as best-effort.
-- Synced ESPN games have empty stats on the match sheet until you add a stats source.
+- Synced ESPN games include season stats on the match sheet (fetched from ESPN team statistics).
 - Mock data is used only when Supabase is not configured. All ESPN-synced leagues never fall back to mock after Supabase is enabled.
 - **NFL** and **MLS** use a 21-day fetch window (weekly/sparse schedules); games are placed on their real kickoff date (Eastern). Off-season or bye weeks show empty days.
 

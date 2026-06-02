@@ -39,10 +39,16 @@
     "sync:mls:live": "node scripts/sync-espn.mjs MLS --live",
     "sync:wnba": "node scripts/sync-espn.mjs WNBA",
     "sync:wnba:live": "node scripts/sync-espn.mjs WNBA --live",
+    "sync:ncaab": "node scripts/sync-espn.mjs NCAAB",
+    "sync:ncaab:live": "node scripts/sync-espn.mjs NCAAB --live",
+    "sync:ncaaw": "node scripts/sync-espn.mjs NCAAW",
+    "sync:ncaaw:live": "node scripts/sync-espn.mjs NCAAW --live",
     "sync:nfl": "node scripts/sync-espn.mjs NFL",
     "sync:nfl:live": "node scripts/sync-espn.mjs NFL --live",
-    "sync:all": "node scripts/sync-espn.mjs NFL && node scripts/sync-espn.mjs MLB && node scripts/sync-espn.mjs NBA && node scripts/sync-espn.mjs NHL && node scripts/sync-espn.mjs MLS && node scripts/sync-espn.mjs WNBA",
-    "sync:live:all": "node scripts/sync-espn.mjs NFL --live && node scripts/sync-espn.mjs MLB --live && node scripts/sync-espn.mjs NBA --live && node scripts/sync-espn.mjs NHL --live && node scripts/sync-espn.mjs MLS --live && node scripts/sync-espn.mjs WNBA --live"
+    "sync:all": "node scripts/sync-espn.mjs NFL && node scripts/sync-espn.mjs MLB && node scripts/sync-espn.mjs NBA && node scripts/sync-espn.mjs NHL && node scripts/sync-espn.mjs MLS && node scripts/sync-espn.mjs WNBA && node scripts/sync-espn.mjs NCAAB && node scripts/sync-espn.mjs NCAAW",
+    "sync:live:basketball": "node scripts/sync-espn.mjs NBA --live && node scripts/sync-espn.mjs WNBA --live && node scripts/sync-espn.mjs NCAAB --live && node scripts/sync-espn.mjs NCAAW --live",
+    "sync:live:other": "node scripts/sync-espn.mjs NFL --live && node scripts/sync-espn.mjs MLB --live && node scripts/sync-espn.mjs NHL --live && node scripts/sync-espn.mjs MLS --live",
+    "sync:live:all": "npm run sync:live:basketball && npm run sync:live:other"
   },
   "private": true
 }

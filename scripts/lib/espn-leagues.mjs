@@ -1,7 +1,7 @@
 import { createEspnScheduleApi } from './espn-schedule.mjs';
 import { buildTeamLookup, fetchEspnTeams } from './espn-team-utils.mjs';
 
-/** @typedef {'NFL'|'MLB'|'NBA'|'NHL'|'MLS'|'WNBA'} EspnLeagueKey */
+/** @typedef {'NFL'|'MLB'|'NBA'|'NHL'|'MLS'|'WNBA'|'NCAAB'|'NCAAW'} EspnLeagueKey */
 
 /** @type {Record<EspnLeagueKey, { sport: string; idPrefix: string; idLikePattern: string; teamsUrl: string; scoreboardUrl: string; teamsTable: string; syncRunsTable: string }>} */
 export const ESPN_LEAGUES = {
@@ -63,6 +63,26 @@ export const ESPN_LEAGUES = {
     teamsTable: 'wnba_teams',
     syncRunsTable: 'wnba_sync_runs',
   },
+  NCAAB: {
+    sport: 'NCAAB',
+    idPrefix: 'espn-ncaab',
+    idLikePattern: 'espn-ncaab-%',
+    teamsUrl: 'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/teams',
+    scoreboardUrl:
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard',
+    teamsTable: 'ncaab_teams',
+    syncRunsTable: 'ncaab_sync_runs',
+  },
+  NCAAW: {
+    sport: 'NCAAW',
+    idPrefix: 'espn-ncaaw',
+    idLikePattern: 'espn-ncaaw-%',
+    teamsUrl: 'https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/teams',
+    scoreboardUrl:
+      'https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/scoreboard',
+    teamsTable: 'ncaaw_teams',
+    syncRunsTable: 'ncaaw_sync_runs',
+  },
 };
 
 /** @param {EspnLeagueKey} key */
@@ -82,6 +102,7 @@ export function getLeagueSyncApis(key) {
 
   return {
     sport: league.sport,
+    teamsUrl: league.teamsUrl,
     idLikePattern: league.idLikePattern,
     teamsTable: league.teamsTable,
     syncRunsTable: league.syncRunsTable,

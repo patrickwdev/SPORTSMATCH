@@ -12,6 +12,8 @@ import {
   isEspnCachedSport,
   type EspnCachedSport,
 } from '../lib/espnLeagues';
+import { enrichMatchTeamRecords } from '../lib/espnTeamRecord';
+import { fetchEspnMatchStats } from '../lib/espnStats';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import type { Match, Sport } from '../types';
 
@@ -88,13 +90,35 @@ export async function fetchMatchById(id: string): Promise<Match | null> {
     return null;
   }
 
-  const match = rowToMatch(data as MatchRow);
+  let match = rowToMatch(data as MatchRow);
   if (!isEspnCachedSport(match.sport)) {
     return match;
   }
 
   const teamLookup = await fetchTeamLookupForSport(match.sport);
-  return enrichEspnMatch(match, teamLookup);
+  match = enrichEspnMatch(match, teamLookup);
+
+  const records = await enrichMatchTeamRecords({
+    sport: match.sport,
+    awayTeam: match.awayTeam,
+    homeTeam: match.homeTeam,
+  });
+  match = { ...match, awayTeam: records.awayTeam, homeTeam: records.homeTeam };
+
+  try {
+    const stats = await fetchEspnMatchStats(
+      match.sport,
+      match.awayTeam.id,
+      match.homeTeam.id,
+    );
+    if (stats.length > 0) {
+      match = { ...match, stats };
+    }
+  } catch {
+    // Stats are best-effort; keep synced DB stats if live fetch fails.
+  }
+
+  return match;
 }
 
 export async function fetchWeekLabel(sport: Sport): Promise<string> {

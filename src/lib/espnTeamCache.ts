@@ -15,7 +15,9 @@ export type EspnTeamTable =
   | 'nba_teams'
   | 'nhl_teams'
   | 'mls_teams'
-  | 'wnba_teams';
+  | 'wnba_teams'
+  | 'ncaab_teams'
+  | 'ncaaw_teams';
 
 export async function fetchEspnTeamLookup(
   table: EspnTeamTable,

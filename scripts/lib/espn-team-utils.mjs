@@ -57,7 +57,11 @@ export function mapEspnTeamRow(team) {
 
 /** @param {string} teamsUrl @param {string} label */
 export async function fetchEspnTeams(teamsUrl, label) {
-  const res = await fetch(teamsUrl, {
+  const needsHighLimit = teamsUrl.includes('college-basketball');
+  const fetchUrl = needsHighLimit
+    ? `${teamsUrl}${teamsUrl.includes('?') ? '&' : '?'}limit=500`
+    : teamsUrl;
+  const res = await fetch(fetchUrl, {
     headers: { Accept: 'application/json', 'User-Agent': 'sports-match-sync/1.0' },
   });
   if (!res.ok) {

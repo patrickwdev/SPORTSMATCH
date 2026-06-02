@@ -16,6 +16,8 @@
  */
 
 import { getDateWindow, toISODateLocal } from './dates.mjs';
+import { attachStatsToRow, fetchLeagueStatsCache } from './espn-stats.mjs';
+import { enrichRowsWithTeamRecords } from './espn-team-record.mjs';
 
 const DAYS = 7;
 
@@ -124,9 +126,28 @@ export async function runDailySync(config) {
     const teamLookup = await syncTeamsDirectory(config);
     const rows = await config.fetchScheduleWindow(DAYS, new Date(), teamLookup);
 
+    let enrichedRows = rows;
+    try {
+      if (config.teamsUrl) {
+        enrichedRows = await enrichRowsWithTeamRecords(enrichedRows, config.sport, config.teamsUrl);
+      }
+    } catch (recordError) {
+      const message = recordError instanceof Error ? recordError.message : String(recordError);
+      console.warn(`${config.sport} team record enrichment skipped: ${message}`);
+    }
+    try {
+      const statsCache = await fetchLeagueStatsCache(config.sport, config.fetchTeams);
+      enrichedRows = enrichedRows.map((row) => attachStatsToRow(config.sport, row, statsCache));
+      const withStats = enrichedRows.filter((row) => row.stats?.length > 0).length;
+      console.log(`Attached season stats to ${withStats}/${rows.length} ${config.sport} games.`);
+    } catch (statsError) {
+      const message = statsError instanceof Error ? statsError.message : String(statsError);
+      console.warn(`${config.sport} stats enrichment skipped: ${message}`);
+    }
+
     await deleteCachedEspnGames(config);
 
-    const upserted = await upsertScheduleRows(config, rows);
+    const upserted = await upsertScheduleRows(config, enrichedRows);
     console.log(
       `Daily ${config.sport} sync: ${upserted} games (${windowDates[0]} → ${windowDates[windowDates.length - 1]})`,
     );
@@ -166,8 +187,18 @@ export async function runLiveSync(config) {
       }
     }
 
+    let scheduleRows = rows;
+    try {
+      if (config.teamsUrl) {
+        scheduleRows = await enrichRowsWithTeamRecords(scheduleRows, config.sport, config.teamsUrl);
+      }
+    } catch (recordError) {
+      const message = recordError instanceof Error ? recordError.message : String(recordError);
+      console.warn(`${config.sport} team record enrichment skipped: ${message}`);
+    }
+
     let updated = 0;
-    for (const row of rows) {
+    for (const row of scheduleRows) {
       const { data: current } = await config.supabase
         .from('matches')
         .select('stats')

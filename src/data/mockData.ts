@@ -42,17 +42,17 @@ const mlbTeams: Record<string, TeamSummary> = {
 };
 
 const mlsTeams: Record<string, TeamSummary> = {
-  lafc: { id: 'lafc', name: 'LAFC', abbreviation: 'LAFC', color: '#C39E6D', logoUrl: mlsLogoUrl('LAFC'), record: { overall: '8-3-4', winPct: '.667', points: '28', streak: 'W2' } },
-  la: { id: 'la', name: 'LA Galaxy', abbreviation: 'LA', color: '#00245D', logoUrl: mlsLogoUrl('LA'), record: { overall: '7-4-4', winPct: '.600', points: '25', streak: 'D1' } },
-  mia: { id: 'mia', name: 'Inter Miami', abbreviation: 'MIA', color: '#F7B5CD', logoUrl: mlsLogoUrl('MIA'), record: { overall: '9-2-3', winPct: '.750', points: '30', streak: 'W3' } },
-  atl: { id: 'atl', name: 'Atlanta United', abbreviation: 'ATL', color: '#80000A', logoUrl: mlsLogoUrl('ATL'), record: { overall: '6-5-3', winPct: '.500', points: '21', streak: 'L1' } },
+  lafc: { id: 'lafc', name: 'LAFC', abbreviation: 'LAFC', color: '#C39E6D', logoUrl: mlsLogoUrl('LAFC'), record: { overall: '8-3-4', winPct: '.667', points: '1.87', streak: 'W2' } },
+  la: { id: 'la', name: 'LA Galaxy', abbreviation: 'LA', color: '#00245D', logoUrl: mlsLogoUrl('LA'), record: { overall: '7-4-4', winPct: '.600', points: '1.67', streak: 'D1' } },
+  mia: { id: 'mia', name: 'Inter Miami', abbreviation: 'MIA', color: '#F7B5CD', logoUrl: mlsLogoUrl('MIA'), record: { overall: '9-2-3', winPct: '.750', points: '2.00', streak: 'W3' } },
+  atl: { id: 'atl', name: 'Atlanta United', abbreviation: 'ATL', color: '#80000A', logoUrl: mlsLogoUrl('ATL'), record: { overall: '6-5-3', winPct: '.500', points: '1.17', streak: 'L1' } },
 };
 
 const nhlTeams: Record<string, TeamSummary> = {
-  bos: { id: 'bos', name: 'Boston Bruins', abbreviation: 'BOS', color: '#FFB81C', logoUrl: nhlLogoUrl('BOS'), record: { overall: '42-18-5', winPct: '.676', points: '89', streak: 'W2' } },
-  ny: { id: 'ny', name: 'New York Rangers', abbreviation: 'NYR', color: '#0038A8', logoUrl: nhlLogoUrl('NYR'), record: { overall: '38-22-6', winPct: '.621', points: '82', streak: 'W1' } },
-  edm: { id: 'edm', name: 'Edmonton Oilers', abbreviation: 'EDM', color: '#FF4C00', logoUrl: nhlLogoUrl('EDM'), record: { overall: '40-20-4', winPct: '.656', points: '84', streak: 'L1' } },
-  col: { id: 'col', name: 'Colorado Avalanche', abbreviation: 'COL', color: '#6F263D', logoUrl: nhlLogoUrl('COL'), record: { overall: '36-24-5', winPct: '.590', points: '77', streak: 'W3' } },
+  bos: { id: 'bos', name: 'Boston Bruins', abbreviation: 'BOS', color: '#FFB81C', logoUrl: nhlLogoUrl('BOS'), record: { overall: '42-18-5', winPct: '.676', points: '1.37', streak: 'W2' } },
+  ny: { id: 'ny', name: 'New York Rangers', abbreviation: 'NYR', color: '#0038A8', logoUrl: nhlLogoUrl('NYR'), record: { overall: '38-22-6', winPct: '.621', points: '1.26', streak: 'W1' } },
+  edm: { id: 'edm', name: 'Edmonton Oilers', abbreviation: 'EDM', color: '#FF4C00', logoUrl: nhlLogoUrl('EDM'), record: { overall: '40-20-4', winPct: '.656', points: '1.31', streak: 'L1' } },
+  col: { id: 'col', name: 'Colorado Avalanche', abbreviation: 'COL', color: '#6F263D', logoUrl: nhlLogoUrl('COL'), record: { overall: '36-24-5', winPct: '.590', points: '1.20', streak: 'W3' } },
 };
 
 const nbaTeams: Record<string, TeamSummary> = {
@@ -121,7 +121,17 @@ function nbaStats(): StatRow[] {
 }
 
 function nhlStats(): StatRow[] {
-  return nbaStats();
+  return [
+    { id: '1', label: 'Goals/G', awaySeason: 3.2, awaySplit: 3.0, awayLast5: 3.4, awayL5Rank: 5, homeSeason: 2.9, homeSplit: 3.1, homeLast5: 2.6, homeL5Rank: 12, awayAdvantage: true },
+    { id: '2', label: 'Opp Goals/G', awaySeason: 2.8, awaySplit: 3.0, awayLast5: 2.4, awayL5Rank: 8, homeSeason: 3.1, homeSplit: 2.9, homeLast5: 3.4, homeL5Rank: 18, awayAdvantage: true },
+    { id: '3', label: 'Blocks/G', awaySeason: 14.2, awaySplit: 13.8, awayLast5: 15.0, awayL5Rank: 6, homeSeason: 13.5, homeSplit: 14.1, homeLast5: 12.8, homeL5Rank: 14, awayAdvantage: true },
+    { id: '4', label: 'Shots/G', awaySeason: 30.1, awaySplit: 29.4, awayLast5: 31.2, awayL5Rank: 4, homeSeason: 28.6, homeSplit: 29.0, homeLast5: 27.4, homeL5Rank: 16, awayAdvantage: true },
+    { id: '6', label: 'Shooting %', awaySeason: 10.6, awaySplit: 10.2, awayLast5: 10.9, awayL5Rank: 7, homeSeason: 10.1, homeSplit: 10.4, homeLast5: 9.8, homeL5Rank: 15, awayAdvantage: true },
+    { id: '7', label: 'FW', awaySeason: 28.4, awaySplit: 27.8, awayLast5: 29.2, awayL5Rank: 6, homeSeason: 26.9, homeSplit: 27.4, homeLast5: 25.6, homeL5Rank: 14, awayAdvantage: true },
+    { id: '8', label: 'FO %', awaySeason: 51.2, awaySplit: 50.8, awayLast5: 51.8, awayL5Rank: 8, homeSeason: 49.8, homeSplit: 50.2, homeLast5: 49.2, homeL5Rank: 17, awayAdvantage: true },
+    { id: '9', label: 'PPG/G', awaySeason: 0.7, awaySplit: 0.8, awayLast5: 0.6, awayL5Rank: 9, homeSeason: 0.6, homeSplit: 0.5, homeLast5: 0.8, homeL5Rank: 11, awayAdvantage: false },
+    { id: '10', label: 'PIM/G', awaySeason: 8.4, awaySplit: 8.8, awayLast5: 7.6, awayL5Rank: 14, homeSeason: 9.1, homeSplit: 8.6, homeLast5: 9.4, homeL5Rank: 22, awayAdvantage: true },
+  ];
 }
 
 function wnbaStats(): StatRow[] {
