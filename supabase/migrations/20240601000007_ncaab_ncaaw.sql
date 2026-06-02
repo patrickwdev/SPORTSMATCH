@@ -22,6 +22,7 @@ create index if not exists ncaab_teams_abbreviation_idx on public.ncaab_teams (a
 
 alter table public.ncaab_teams enable row level security;
 
+drop policy if exists "Allow public read access on ncaab_teams" on public.ncaab_teams;
 create policy "Allow public read access on ncaab_teams"
   on public.ncaab_teams for select to anon, authenticated using (true);
 
@@ -43,6 +44,7 @@ create index if not exists ncaaw_teams_abbreviation_idx on public.ncaaw_teams (a
 
 alter table public.ncaaw_teams enable row level security;
 
+drop policy if exists "Allow public read access on ncaaw_teams" on public.ncaaw_teams;
 create policy "Allow public read access on ncaaw_teams"
   on public.ncaaw_teams for select to anon, authenticated using (true);
 
