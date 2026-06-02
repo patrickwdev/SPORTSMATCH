@@ -1,0 +1,26 @@
+name: Sync ESPN live scores (all leagues)
+
+on:
+  schedule:
+    # Every 10 minutes — live scores and game status
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        league: [NFL, MLB, NBA, NHL, MLS, WNBA]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Live sync ${{ matrix.league }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/sync-espn.mjs ${{ matrix.league }} --live
