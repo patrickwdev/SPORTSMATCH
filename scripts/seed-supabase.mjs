@@ -69,7 +69,17 @@ const supabase = createClient(url, serviceKey, {
 });
 
 /** Leagues filled by ESPN sync — do not seed mock games for these. */
-const ESPN_SYNC_SPORTS = new Set(['NFL', 'MLB', 'NBA', 'NHL', 'MLS', 'WNBA', 'NCAAB', 'NCAAW']);
+const ESPN_SYNC_SPORTS = new Set([
+  'NFL',
+  'NCAAF',
+  'MLB',
+  'NBA',
+  'NHL',
+  'MLS',
+  'WNBA',
+  'NCAAB',
+  'NCAAW',
+]);
 const seedMatches = matches.filter((m) => !ESPN_SYNC_SPORTS.has(m.sport));
 
 const rows = seedMatches.map((m) => ({

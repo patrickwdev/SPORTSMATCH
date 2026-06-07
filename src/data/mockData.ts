@@ -26,12 +26,54 @@ function wnbaLogoUrl(abbreviation: string): string {
 }
 
 const nflTeams: Record<string, TeamSummary> = {
-  kc: { id: 'kc', name: 'Kansas City', abbreviation: 'KC', color: '#E31837', logoUrl: nflLogoUrl('KC'), record: { overall: '7-2-0', winPct: '.778', points: '—', streak: 'W3' } },
-  buf: { id: 'buf', name: 'Buffalo', abbreviation: 'BUF', color: '#00338D', logoUrl: nflLogoUrl('BUF'), record: { overall: '6-3-0', winPct: '.667', points: '—', streak: 'L1' } },
-  dal: { id: 'dal', name: 'Dallas', abbreviation: 'DAL', color: '#003594', logoUrl: nflLogoUrl('DAL'), record: { overall: '5-4-0', winPct: '.556', points: '—', streak: 'W1' } },
-  phi: { id: 'phi', name: 'Philadelphia', abbreviation: 'PHI', color: '#004C54', logoUrl: nflLogoUrl('PHI'), record: { overall: '6-3-0', winPct: '.667', points: '—', streak: 'W2' } },
-  sf: { id: 'sf', name: 'San Francisco', abbreviation: 'SF', color: '#AA0000', logoUrl: nflLogoUrl('SF'), record: { overall: '5-4-0', winPct: '.556', points: '—', streak: 'W1' } },
-  sea: { id: 'sea', name: 'Seattle', abbreviation: 'SEA', color: '#002244', logoUrl: nflLogoUrl('SEA'), record: { overall: '4-5-0', winPct: '.444', points: '—', streak: 'L2' } },
+  kc: {
+    id: 'kc',
+    name: 'Kansas City',
+    abbreviation: 'KC',
+    color: '#E31837',
+    logoUrl: nflLogoUrl('KC'),
+    record: { overall: '14-3', winPct: '.824', points: '—', streak: 'W9', homeRecord: '8-1', awayRecord: '6-2' },
+  },
+  buf: {
+    id: 'buf',
+    name: 'Buffalo',
+    abbreviation: 'BUF',
+    color: '#00338D',
+    logoUrl: nflLogoUrl('BUF'),
+    record: { overall: '13-4', winPct: '.765', points: '—', streak: 'W2', homeRecord: '7-2', awayRecord: '6-2' },
+  },
+  dal: {
+    id: 'dal',
+    name: 'Dallas',
+    abbreviation: 'DAL',
+    color: '#003594',
+    logoUrl: nflLogoUrl('DAL'),
+    record: { overall: '7-10', winPct: '.412', points: '—', streak: 'L1', homeRecord: '4-5', awayRecord: '3-5' },
+  },
+  phi: {
+    id: 'phi',
+    name: 'Philadelphia',
+    abbreviation: 'PHI',
+    color: '#004C54',
+    logoUrl: nflLogoUrl('PHI'),
+    record: { overall: '14-3', winPct: '.824', points: '—', streak: 'W6', homeRecord: '8-3', awayRecord: '6-0' },
+  },
+  sf: {
+    id: 'sf',
+    name: 'San Francisco',
+    abbreviation: 'SF',
+    color: '#AA0000',
+    logoUrl: nflLogoUrl('SF'),
+    record: { overall: '6-11', winPct: '.353', points: '—', streak: 'W1', homeRecord: '3-6', awayRecord: '3-5' },
+  },
+  sea: {
+    id: 'sea',
+    name: 'Seattle',
+    abbreviation: 'SEA',
+    color: '#002244',
+    logoUrl: nflLogoUrl('SEA'),
+    record: { overall: '10-7', winPct: '.588', points: '—', streak: 'L2', homeRecord: '5-4', awayRecord: '5-3' },
+  },
 };
 
 const mlbTeams: Record<string, TeamSummary> = {
@@ -71,18 +113,21 @@ const wnbaTeams: Record<string, TeamSummary> = {
 
 function nflStats(): StatRow[] {
   return [
-    { id: '1', label: 'Points/G', awaySeason: 27.4, awaySplit: 26.1, awayLast5: 29.2, awayL5Rank: 4, homeSeason: 24.8, homeSplit: 26.5, homeLast5: 23.0, homeL5Rank: 14, awayAdvantage: true },
-    { id: '2', label: 'Opp Pts/G', awaySeason: 19.2, awaySplit: 18.5, awayLast5: 17.8, awayL5Rank: 6, homeSeason: 22.1, homeSplit: 20.4, homeLast5: 24.2, homeL5Rank: 22, awayAdvantage: true },
-    { id: '3', label: 'Pass Yds/G', awaySeason: 268.3, awaySplit: 255.0, awayLast5: 281.4, awayL5Rank: 3, homeSeason: 241.2, homeSplit: 252.8, homeLast5: 235.6, homeL5Rank: 18, awayAdvantage: true },
-    { id: '4', label: 'Rush Yds/G', awaySeason: 118.5, awaySplit: 112.2, awayLast5: 125.0, awayL5Rank: 8, homeSeason: 105.3, homeSplit: 110.8, homeLast5: 98.4, homeL5Rank: 12, awayAdvantage: true },
-    { id: '5', label: 'Total Yds/G', awaySeason: 386.8, awaySplit: 367.2, awayLast5: 406.4, awayL5Rank: 5, homeSeason: 346.5, homeSplit: 363.6, homeLast5: 334.0, homeL5Rank: 16, awayAdvantage: true },
-    { id: '6', label: 'Opp Rush/G', awaySeason: 98.2, awaySplit: 95.0, awayLast5: 92.4, awayL5Rank: 7, homeSeason: 112.5, homeSplit: 108.2, homeLast5: 118.0, homeL5Rank: 24, awayAdvantage: true },
-    { id: '7', label: '3rd Down %', awaySeason: 0.452, awaySplit: 0.438, awayLast5: 0.468, awayL5Rank: 9, homeSeason: 0.421, homeSplit: 0.435, homeLast5: 0.410, homeL5Rank: 20, awayAdvantage: true, format: 'percent' },
-    { id: '8', label: 'Red Zone %', awaySeason: 0.612, awaySplit: 0.598, awayLast5: 0.635, awayL5Rank: 2, homeSeason: 0.558, homeSplit: 0.572, homeLast5: 0.540, homeL5Rank: 15, awayAdvantage: true, format: 'percent' },
-    { id: '9', label: 'Turnovers/G', awaySeason: 0.9, awaySplit: 1.0, awayLast5: 0.6, awayL5Rank: 5, homeSeason: 1.2, homeSplit: 1.1, homeLast5: 1.4, homeL5Rank: 26, awayAdvantage: true },
-    { id: '10', label: 'Sacks/G', awaySeason: 2.8, awaySplit: 2.5, awayLast5: 3.2, awayL5Rank: 11, homeSeason: 3.1, homeSplit: 3.4, homeLast5: 3.0, homeL5Rank: 8, awayAdvantage: false },
-    { id: '11', label: 'Penalties/G', awaySeason: 6.2, awaySplit: 6.5, awayLast5: 5.8, awayL5Rank: 14, homeSeason: 7.1, homeSplit: 6.8, homeLast5: 7.4, homeL5Rank: 22, awayAdvantage: true },
-    { id: '12', label: 'TOP (min)', awaySeason: 31.2, awaySplit: 30.5, awayLast5: 32.0, awayL5Rank: 6, homeSeason: 29.8, homeSplit: 30.2, homeLast5: 29.2, homeL5Rank: 18, awayAdvantage: true },
+    { id: '1', label: 'PPG', awaySeason: 27.4, awaySplit: 26.1, awayLast5: 29.2, awayL5Rank: 4, homeSeason: 24.8, homeSplit: 26.5, homeLast5: 23.0, homeL5Rank: 14, awayAdvantage: true },
+    { id: '2', label: 'PPG/A', awaySeason: 19.2, awaySplit: 18.5, awayLast5: 17.8, awayL5Rank: 6, homeSeason: 22.1, homeSplit: 20.4, homeLast5: 24.2, homeL5Rank: 22, awayAdvantage: true },
+    { id: '3', label: 'Pass YPG', awaySeason: 268.3, awaySplit: 255.0, awayLast5: 281.4, awayL5Rank: 3, homeSeason: 241.2, homeSplit: 252.8, homeLast5: 235.6, homeL5Rank: 18, awayAdvantage: true },
+    { id: '4', label: 'Pass YPG/A', awaySeason: 215.0, awaySplit: 208.2, awayLast5: 201.4, awayL5Rank: 7, homeSeason: 228.5, homeSplit: 220.1, homeLast5: 236.0, homeL5Rank: 24, awayAdvantage: true },
+    { id: '5', label: 'Yards/Pass', awaySeason: 7.2, awaySplit: 7.0, awayLast5: 7.4, awayL5Rank: 5, homeSeason: 6.8, homeSplit: 6.9, homeLast5: 6.6, homeL5Rank: 16, awayAdvantage: true },
+    { id: '6', label: 'QB Comp%', awaySeason: 0.672, awaySplit: 0.658, awayLast5: 0.685, awayL5Rank: 3, homeSeason: 0.641, homeSplit: 0.652, homeLast5: 0.630, homeL5Rank: 18, awayAdvantage: true, format: 'percent' },
+    { id: '7', label: 'Rush YPG', awaySeason: 118.5, awaySplit: 112.2, awayLast5: 125.0, awayL5Rank: 8, homeSeason: 105.3, homeSplit: 110.8, homeLast5: 98.4, homeL5Rank: 12, awayAdvantage: true },
+    { id: '8', label: 'Rush YPG/A', awaySeason: 98.2, awaySplit: 95.0, awayLast5: 92.4, awayL5Rank: 7, homeSeason: 112.5, homeSplit: 108.2, homeLast5: 118.0, homeL5Rank: 24, awayAdvantage: true },
+    { id: '9', label: 'Yards/Rush', awaySeason: 4.5, awaySplit: 4.3, awayLast5: 4.7, awayL5Rank: 6, homeSeason: 4.1, homeSplit: 4.2, homeLast5: 3.9, homeL5Rank: 15, awayAdvantage: true },
+    { id: '10', label: '3rdDown%', awaySeason: 0.452, awaySplit: 0.438, awayLast5: 0.468, awayL5Rank: 9, homeSeason: 0.421, homeSplit: 0.435, homeLast5: 0.410, homeL5Rank: 20, awayAdvantage: true, format: 'percent' },
+    { id: '11', label: '3rdDown%/A', awaySeason: 0.382, awaySplit: 0.370, awayLast5: 0.360, awayL5Rank: 5, homeSeason: 0.412, homeSplit: 0.398, homeLast5: 0.425, homeL5Rank: 22, awayAdvantage: true, format: 'percent' },
+    { id: '12', label: '4thDown%', awaySeason: 0.625, awaySplit: 0.600, awayLast5: 0.667, awayL5Rank: 4, homeSeason: 0.500, homeSplit: 0.520, homeLast5: 0.480, homeL5Rank: 17, awayAdvantage: true, format: 'percent' },
+    { id: '13', label: 'Turnovers/G', awaySeason: 0.9, awaySplit: 1.0, awayLast5: 0.6, awayL5Rank: 5, homeSeason: 1.2, homeSplit: 1.1, homeLast5: 1.4, homeL5Rank: 26, awayAdvantage: true },
+    { id: '14', label: 'TakeAway/G', awaySeason: 1.4, awaySplit: 1.3, awayLast5: 1.6, awayL5Rank: 8, homeSeason: 1.1, homeSplit: 1.2, homeLast5: 1.0, homeL5Rank: 14, awayAdvantage: true },
+    { id: '15', label: 'PenYards/G', awaySeason: 52.4, awaySplit: 48.0, awayLast5: 45.0, awayL5Rank: 10, homeSeason: 58.2, homeSplit: 55.1, homeLast5: 61.0, homeL5Rank: 22, awayAdvantage: true },
   ];
 }
 
@@ -155,8 +200,9 @@ export const matches: Match[] = [
     sport: 'NFL',
     awayTeam: nflTeams.kc,
     homeTeam: nflTeams.buf,
-    startTime: '4:25 PM ET',
+    startTime: 'Sunday 4:25 PM ET',
     location: 'Buffalo, NY',
+    weather: 'Partly Cloudy | 38° | Wind: 12 mph | 20% Rain',
     weekLabel: 'Week 10',
     gameDate: gameDateFromToday(0),
     stats: nflStats(),

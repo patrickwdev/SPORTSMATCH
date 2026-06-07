@@ -1,7 +1,7 @@
 import { createEspnScheduleApi } from './espn-schedule.mjs';
 import { buildTeamLookup, fetchEspnTeams } from './espn-team-utils.mjs';
 
-/** @typedef {'NFL'|'MLB'|'NBA'|'NHL'|'MLS'|'WNBA'|'NCAAB'|'NCAAW'} EspnLeagueKey */
+/** @typedef {'NFL'|'NCAAF'|'MLB'|'NBA'|'NHL'|'MLS'|'WNBA'|'NCAAB'|'NCAAW'} EspnLeagueKey */
 
 /** @type {Record<EspnLeagueKey, { sport: string; idPrefix: string; idLikePattern: string; teamsUrl: string; scoreboardUrl: string; teamsTable: string; syncRunsTable: string }>} */
 export const ESPN_LEAGUES = {
@@ -14,7 +14,22 @@ export const ESPN_LEAGUES = {
     teamsTable: 'nfl_teams',
     syncRunsTable: 'nfl_sync_runs',
     scheduleStrategy: 'range',
-    rangeLookaheadDays: 21,
+    rangeLookaheadDays: 90,
+    scheduleDays: 90,
+  },
+  NCAAF: {
+    sport: 'NCAAF',
+    idPrefix: 'espn-ncaaf',
+    idLikePattern: 'espn-ncaaf-%',
+    teamsUrl: 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',
+    scoreboardUrl:
+      'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard',
+    teamsTable: 'ncaaf_teams',
+    syncRunsTable: 'ncaaf_sync_runs',
+    scheduleStrategy: 'range',
+    // Opening weekend is ~85+ days out in the offseason; 90-day ESPN fetch misses it.
+    rangeLookaheadDays: 120,
+    scheduleDays: 120,
   },
   MLB: {
     sport: 'MLB',
@@ -52,7 +67,9 @@ export const ESPN_LEAGUES = {
     teamsTable: 'mls_teams',
     syncRunsTable: 'mls_sync_runs',
     scheduleStrategy: 'range',
-    rangeLookaheadDays: 21,
+    // ESPN returns no MLS fixtures in short ranges; need ~45+ days to reach next match days.
+    rangeLookaheadDays: 74,
+    scheduleDays: 60,
   },
   WNBA: {
     sport: 'WNBA',
@@ -72,6 +89,7 @@ export const ESPN_LEAGUES = {
       'https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard',
     teamsTable: 'ncaab_teams',
     syncRunsTable: 'ncaab_sync_runs',
+    scheduleDays: 21,
   },
   NCAAW: {
     sport: 'NCAAW',
@@ -82,6 +100,7 @@ export const ESPN_LEAGUES = {
       'https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/scoreboard',
     teamsTable: 'ncaaw_teams',
     syncRunsTable: 'ncaaw_sync_runs',
+    scheduleDays: 21,
   },
 };
 
@@ -102,6 +121,7 @@ export function getLeagueSyncApis(key) {
 
   return {
     sport: league.sport,
+    scheduleDays: league.scheduleDays,
     teamsUrl: league.teamsUrl,
     idLikePattern: league.idLikePattern,
     teamsTable: league.teamsTable,

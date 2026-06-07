@@ -1,16 +1,35 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { Match, Sport } from '../../types';
+import { formatStreakDisplay } from '../../lib/espnStreak';
 import { colors } from '../../theme/colors';
+import { isBasketballSport, isFootballSport } from '../../utils/sport';
 import { TeamBadge } from '../TeamBadge';
 
 interface Props {
   match: Match;
 }
 
-function RecordTable({ record, sport }: { record: Match['awayTeam']['record']; sport: Sport }) {
+function RecordTable({
+  record,
+  sport,
+}: {
+  record: Match['awayTeam']['record'];
+  sport: Sport;
+}) {
+  const basketball = isBasketballSport(sport);
+  const showPoints = !isFootballSport(sport) && !basketball;
   const pointsHeader = sport === 'NHL' ? 'PTS/G' : 'Points';
-  const headers = ['Overall', 'Win %', pointsHeader, 'Streak'];
-  const values = [record.overall, record.winPct, record.points, record.streak];
+  const home = record.homeRecord ?? '—';
+  const away = record.awayRecord ?? '—';
+
+  const headers = showPoints
+    ? ['Overall', 'Home', 'Away', 'Win %', pointsHeader, 'Streak']
+    : ['Overall', 'Home', 'Away', 'Win %', 'Streak'];
+  const streak = formatStreakDisplay(record.streak);
+  const values = showPoints
+    ? [record.overall, home, away, record.winPct, record.points, streak]
+    : [record.overall, home, away, record.winPct, streak];
+
   return (
     <View style={styles.table}>
       <View style={styles.tableRow}>
@@ -100,7 +119,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     color: colors.text,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '600',
     backgroundColor: colors.headerBg,
     width: '100%',
@@ -109,7 +128,7 @@ const styles = StyleSheet.create({
   },
   valueText: {
     color: colors.text,
-    fontSize: 10,
+    fontSize: 9,
     paddingVertical: 4,
     textAlign: 'center',
   },

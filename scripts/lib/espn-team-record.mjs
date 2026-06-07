@@ -1,3 +1,5 @@
+import { fetchTeamStreak, formatStreakDisplay } from './espn-streak.mjs';
+
 const FETCH_HEADERS = {
   Accept: 'application/json',
   'User-Agent': 'sports-match-sync/1.0',
@@ -62,7 +64,7 @@ function formatPoints(stats, sport) {
 function formatStreak(stats) {
   const streak = stats.streak;
   if (streak == null || streak === 0) return '—';
-  return String(streak);
+  return formatStreakDisplay(streak);
 }
 
 /**
@@ -176,14 +178,52 @@ export function enrichRowTeamRecords(row, sport, recordCache) {
   };
 }
 
+/** @param {string} teamsUrl @param {string[]} teamIds @param {string} sport */
+async function fetchLeagueStreakCache(teamsUrl, teamIds, sport) {
+  const unique = [...new Set(teamIds.map(String))];
+  const entries = await Promise.all(
+    unique.map(async (teamId) => {
+      const streak = await fetchTeamStreak(teamId, teamsUrl, sport);
+      return [teamId, streak];
+    }),
+  );
+  return new Map(entries);
+}
+
 /** @param {object[]} rows @param {string} sport @param {string} teamsUrl */
 export async function enrichRowsWithTeamRecords(rows, sport, teamsUrl) {
   if (!rows.length || !teamsUrl) return rows;
 
   const teamIds = rows.flatMap((r) => [r.away_team?.id, r.home_team?.id]).filter(Boolean);
-  const recordCache = await fetchLeagueRecordCache(teamsUrl, teamIds, sport);
+  const [recordCache, streakCache] = await Promise.all([
+    fetchLeagueRecordCache(teamsUrl, teamIds, sport),
+    fetchLeagueStreakCache(teamsUrl, teamIds, sport),
+  ]);
 
-  return rows.map((row) => enrichRowTeamRecords(row, sport, recordCache));
+  return rows.map((row) => {
+    const enriched = enrichRowTeamRecords(row, sport, recordCache);
+    const awayId = String(enriched.away_team?.id ?? '');
+    const homeId = String(enriched.home_team?.id ?? '');
+    const awayStreak = streakCache.get(awayId);
+    const homeStreak = streakCache.get(homeId);
+    return {
+      ...enriched,
+      away_team: {
+        ...enriched.away_team,
+        record: {
+          ...enriched.away_team.record,
+          ...(awayStreak && awayStreak !== '—' ? { streak: awayStreak } : {}),
+        },
+      },
+      home_team: {
+        ...enriched.home_team,
+        record: {
+          ...enriched.home_team.record,
+          ...(homeStreak && homeStreak !== '—' ? { streak: homeStreak } : {}),
+        },
+      },
+    };
+  });
 }
 
 export { EMPTY_RECORD };

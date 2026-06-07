@@ -229,7 +229,7 @@ export async function fetchNhlGameTotals(
       async (event: {
         id: string;
         competitions: Array<{
-          competitors: Array<{ team?: { id?: string; homeAway?: string }; score?: unknown }>;
+          competitors: Array<{ team?: { id?: string }; homeAway?: string; score?: unknown }>;
         }>;
       }) => {
         const comp = event.competitions[0];

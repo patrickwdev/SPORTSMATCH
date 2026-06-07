@@ -15,11 +15,13 @@
  * @param {boolean} config.isLive
  */
 
-import { getDateWindow, toISODateLocal } from './dates.mjs';
+import { addDaysToIso, dateFromIso, getDateWindow, toISODateEastern, toISODateLocal } from './dates.mjs';
 import { attachStatsToRow, fetchLeagueStatsCache } from './espn-stats.mjs';
 import { enrichRowsWithTeamRecords } from './espn-team-record.mjs';
 
-const DAYS = 7;
+const DEFAULT_SCHEDULE_DAYS = 7;
+/** Past days kept in DB — must cover the matches day picker (up to 14 for NFL/MLS). */
+const SYNC_BACKWARD_DAYS = 14;
 
 /** @param {object} config @param {'daily'|'live'} syncType */
 async function logRunStart(config, syncType) {
@@ -122,9 +124,14 @@ async function deleteCachedEspnGames(config) {
 export async function runDailySync(config) {
   const runId = await logRunStart(config, 'daily');
   try {
-    const windowDates = getDateWindow(DAYS).map(toISODateLocal);
+    const forwardDays = config.scheduleDays ?? DEFAULT_SCHEDULE_DAYS;
+    const totalDays = forwardDays + SYNC_BACKWARD_DAYS;
+    const windowAnchor = new Date();
+    windowAnchor.setHours(0, 0, 0, 0);
+    windowAnchor.setDate(windowAnchor.getDate() - SYNC_BACKWARD_DAYS);
+    const windowDates = getDateWindow(totalDays, windowAnchor).map(toISODateLocal);
     const teamLookup = await syncTeamsDirectory(config);
-    const rows = await config.fetchScheduleWindow(DAYS, new Date(), teamLookup);
+    const rows = await config.fetchScheduleWindow(totalDays, windowAnchor, teamLookup);
 
     let enrichedRows = rows;
     try {
@@ -159,28 +166,69 @@ export async function runDailySync(config) {
   }
 }
 
+/** @param {object} row */
+function rowNeedsScoreUpdate(row) {
+  if (row.game_status === 'canceled' || row.game_status === 'postponed') return false;
+  if (
+    row.game_status === 'in_progress' ||
+    row.game_status === 'delayed' ||
+    row.game_status === 'suspended'
+  ) {
+    return true;
+  }
+  if (row.game_status === 'final' && (row.away_score == null || row.home_score == null)) {
+    return true;
+  }
+  return row.game_status !== 'final';
+}
+
+/** @param {object} config @param {string[]} easternDates YYYY-MM-DD */
+async function hasCachedGamesOnDates(config, easternDates) {
+  for (const gameDate of easternDates) {
+    const { data, error } = await config.supabase
+      .from('matches')
+      .select('id, game_status, away_score, home_score')
+      .eq('sport', config.sport)
+      .eq('game_date', gameDate)
+      .like('id', config.idLikePattern);
+    if (error?.message?.includes('game_date')) {
+      return { missingColumn: true, needsUpdate: false };
+    }
+    if (error) throw new Error(`Live ${config.sport} lookup failed: ${error.message}`);
+    if ((data ?? []).some(rowNeedsScoreUpdate)) {
+      return { missingColumn: false, needsUpdate: true };
+    }
+  }
+  return { missingColumn: false, needsUpdate: false };
+}
+
 /** @param {object} config */
 export async function runLiveSync(config) {
   const runId = await logRunStart(config, 'live');
   try {
-    const today = new Date();
+    const easternTodayIso = toISODateEastern();
+    const easternYesterdayIso = addDaysToIso(easternTodayIso, -1);
     const teamLookup = await loadTeamLookupFromDb(config);
-    const rows = await config.fetchScoreboardForDate(today, teamLookup);
+
+    const [rowsYesterday, rowsToday] = await Promise.all([
+      config.fetchScoreboardForDate(dateFromIso(easternYesterdayIso), teamLookup),
+      config.fetchScoreboardForDate(dateFromIso(easternTodayIso), teamLookup),
+    ]);
+
+    const byId = new Map();
+    for (const row of [...rowsYesterday, ...rowsToday]) {
+      byId.set(row.id, row);
+    }
+    const rows = [...byId.values()];
 
     if (!config.hasActiveGames(rows)) {
-      const { data: existing, error: existingError } = await config.supabase
-        .from('matches')
-        .select('id')
-        .eq('sport', config.sport)
-        .eq('game_date', toISODateLocal(today))
-        .like('id', config.idLikePattern)
-        .limit(1);
-      if (existingError?.message?.includes('game_date')) {
+      const cached = await hasCachedGamesOnDates(config, [easternTodayIso, easternYesterdayIso]);
+      if (cached.missingColumn) {
         console.log(`Live ${config.sport} sync: game_date column missing — skipped`);
         await logRunFinish(config, runId, { games_upserted: 0, games_updated: 0 });
         return;
       }
-      if (!existing?.length) {
+      if (!cached.needsUpdate && rows.length === 0) {
         console.log(`Live ${config.sport} sync: no active games — skipped`);
         await logRunFinish(config, runId, { games_upserted: 0, games_updated: 0 });
         return;
@@ -242,7 +290,9 @@ export async function runLiveSync(config) {
       }
     }
 
-    console.log(`Live ${config.sport} sync: updated ${updated} games for ${toISODateLocal(today)}`);
+    console.log(
+      `Live ${config.sport} sync: updated ${updated} games (${easternYesterdayIso} → ${easternTodayIso})`,
+    );
     await logRunFinish(config, runId, { games_upserted: 0, games_updated: updated });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

@@ -12,6 +12,8 @@ import {
   isEspnCachedSport,
   type EspnCachedSport,
 } from '../lib/espnLeagues';
+import { enrichMatchesWithLiveScores, enrichMatchWithLiveScore } from '../lib/espnLiveScores';
+import { fetchEspnGameWeather } from '../lib/espnGameWeather';
 import { enrichMatchTeamRecords } from '../lib/espnTeamRecord';
 import { fetchEspnMatchStats } from '../lib/espnStats';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
@@ -46,7 +48,8 @@ async function fetchEspnSportFromDatabase(sport: EspnCachedSport): Promise<Match
   }
 
   const teamLookup = await fetchTeamLookupForSport(sport);
-  return (espnRows ?? []).map((row) => enrichEspnMatch(rowToMatch(row), teamLookup));
+  const matches = (espnRows ?? []).map((row) => enrichEspnMatch(rowToMatch(row), teamLookup));
+  return enrichMatchesWithLiveScores(sport, matches);
 }
 
 export async function fetchMatchesForSport(sport: Sport): Promise<Match[]> {
@@ -117,6 +120,13 @@ export async function fetchMatchById(id: string): Promise<Match | null> {
   } catch {
     // Stats are best-effort; keep synced DB stats if live fetch fails.
   }
+
+  const weather = await fetchEspnGameWeather(match.sport, match.espnEventId);
+  if (weather) {
+    match = { ...match, weather };
+  }
+
+  match = await enrichMatchWithLiveScore(match);
 
   return match;
 }

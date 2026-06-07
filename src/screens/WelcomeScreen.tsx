@@ -1,9 +1,8 @@
-import { Picker } from '@react-native-picker/picker';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SPORTS } from '../constants/sports';
+import { LeaguePicker } from '../components/LeaguePicker';
 import type { RootStackParamList } from '../navigation/types';
 import type { Sport } from '../types';
 import { colors } from '../theme/colors';
@@ -11,7 +10,7 @@ import { colors } from '../theme/colors';
 type Props = NativeStackScreenProps<RootStackParamList, 'Welcome'>;
 
 export function WelcomeScreen({ navigation }: Props) {
-  const [sport, setSport] = useState<Sport>('NFL');
+  const [sport, setSport] = useState<Sport | null>(null);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -20,25 +19,22 @@ export function WelcomeScreen({ navigation }: Props) {
         <Text style={styles.subtitle}>Statistical dashboards for the week ahead</Text>
 
         <Text style={styles.label}>Select a league</Text>
-        <View style={styles.pickerWrap}>
-          <Picker
-            selectedValue={sport}
-            onValueChange={(v) => setSport(v as Sport)}
-            style={styles.picker}
-            dropdownIconColor={colors.text}
-            itemStyle={Platform.OS === 'ios' ? styles.pickerItem : undefined}
-          >
-            {SPORTS.map((s) => (
-              <Picker.Item key={s} label={s} value={s} color={Platform.OS === 'ios' ? colors.text : colors.text} />
-            ))}
-          </Picker>
-        </View>
+        <LeaguePicker value={sport} onChange={setSport} />
 
         <Pressable
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          onPress={() => navigation.navigate('Matches', { sport })}
+          disabled={sport === null}
+          style={({ pressed }) => [
+            styles.button,
+            sport === null && styles.buttonDisabled,
+            pressed && sport !== null && styles.buttonPressed,
+          ]}
+          onPress={() => {
+            if (sport) navigation.navigate('Matches', { sport });
+          }}
         >
-          <Text style={styles.buttonText}>View This Week&apos;s Matches</Text>
+          <Text style={[styles.buttonText, sport === null && styles.buttonTextDisabled]}>
+            View This Week&apos;s Matches
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -71,31 +67,20 @@ const styles = StyleSheet.create({
   label: {
     color: colors.textMuted,
     fontSize: 13,
-    marginBottom: 8,
+    marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 1,
-  },
-  pickerWrap: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: 8,
-    backgroundColor: colors.surface,
-    marginBottom: 24,
-    overflow: 'hidden',
-  },
-  picker: {
-    color: colors.text,
-    ...(Platform.OS === 'android' ? { backgroundColor: colors.surface } : {}),
-  },
-  pickerItem: {
-    color: colors.text,
-    fontSize: 18,
   },
   button: {
     backgroundColor: colors.infoBar,
     paddingVertical: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
+    marginTop: 24,
+  },
+  buttonDisabled: {
+    backgroundColor: colors.headerBg,
+    opacity: 0.6,
   },
   buttonPressed: {
     opacity: 0.9,
@@ -104,5 +89,8 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 16,
     fontWeight: '700',
+  },
+  buttonTextDisabled: {
+    color: colors.textMuted,
   },
 });

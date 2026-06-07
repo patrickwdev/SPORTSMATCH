@@ -2,6 +2,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Match } from '../../types';
 import { colors } from '../../theme/colors';
 import { formatStatValue, rankColor, sportMaxTeams } from '../../utils/format';
+import { footballSeasonYear, isFootballSport } from '../../utils/sport';
 import { TeamBadge } from '../TeamBadge';
 
 interface Props {
@@ -22,9 +23,10 @@ const TABLE_WIDTH =
 
 export function StatsTable({ match }: Props) {
   const maxTeams = sportMaxTeams(match.sport);
-  const seasonYear = '2025';
-  const awaySplitLabel = 'Away';
-  const homeSplitLabel = 'Home';
+  const football = isFootballSport(match.sport);
+  const seasonYear = String(footballSeasonYear());
+  const recentLabel = football ? 'L3 Avg' : 'Last 5';
+  const rankLabel = football ? 'L3 Rank' : 'L5 Rank';
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator bounces={false}>
@@ -32,13 +34,13 @@ export function StatsTable({ match }: Props) {
         <View style={[styles.row, styles.headerRow]}>
           <HeaderCell w={COL.stat} text="Statistic" />
           <HeaderCell w={COL.season} text={seasonYear} />
-          <HeaderCell w={COL.split} text={awaySplitLabel} />
-          <HeaderCell w={COL.last5} text="Last 5" />
-          <HeaderCell w={COL.rank} text="L5 Rank" />
+          <HeaderCell w={COL.split} text="Away" />
+          <HeaderCell w={COL.last5} text={recentLabel} />
+          <HeaderCell w={COL.rank} text={rankLabel} />
           <HeaderCell w={COL.adv} text="Adv" />
-          <HeaderCell w={COL.rank} text="L5 Rank" />
-          <HeaderCell w={COL.last5} text="Last 5" />
-          <HeaderCell w={COL.split} text={homeSplitLabel} />
+          <HeaderCell w={COL.rank} text={rankLabel} />
+          <HeaderCell w={COL.last5} text={recentLabel} />
+          <HeaderCell w={COL.split} text="Home" />
           <HeaderCell w={COL.season} text={seasonYear} />
           <HeaderCell w={COL.stat} text="Statistic" />
         </View>

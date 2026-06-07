@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { InfoBar } from '../components/matchSheet/InfoBar';
+import { MatchHistorySection } from '../components/matchSheet/MatchHistorySection';
 import { StatsTable } from '../components/matchSheet/StatsTable';
 import { TeamHeader } from '../components/matchSheet/TeamHeader';
 import { useMatch } from '../hooks/useMatch';
@@ -65,6 +66,7 @@ export function MatchSheetScreen({ route }: Props) {
             <Text style={styles.noStats}>Season stats could not be loaded for this matchup.</Text>
           )}
         </View>
+        <MatchHistorySection match={match} />
       </ScrollView>
     </SafeAreaView>
   );

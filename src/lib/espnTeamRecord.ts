@@ -1,10 +1,14 @@
 import type { Sport, TeamRecord, TeamSummary } from '../types';
+import { isFootballSport } from '../utils/sport';
+import { fetchFootballVenueRecord } from './espnFootballGameTotals';
 import { ESPN_CACHED_SPORTS, type EspnCachedSport } from './espnLeagues';
+import { fetchTeamStreak, formatStreakDisplay } from './espnStreak';
 
 const FETCH_HEADERS = { Accept: 'application/json' };
 
 const TEAMS_URL: Record<EspnCachedSport, string> = {
   NFL: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
+  NCAAF: 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',
   MLB: 'https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/teams',
   NBA: 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams',
   NHL: 'https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/teams',
@@ -69,13 +73,26 @@ function formatPoints(stats: Record<string, number>, sport: Sport): string {
 function formatStreak(stats: Record<string, number>): string {
   const streak = stats.streak;
   if (streak == null || streak === 0) return '—';
-  return String(streak);
+  return formatStreakDisplay(streak);
+}
+
+function extractVenueRecords(
+  items: EspnRecordItem[] | undefined,
+): Pick<TeamRecord, 'homeRecord' | 'awayRecord'> {
+  if (!items?.length) return {};
+  const home = items.find((i) => i.type === 'home');
+  const road = items.find((i) => i.type === 'road' || i.type === 'away');
+  return {
+    homeRecord: home?.summary,
+    awayRecord: road?.summary,
+  };
 }
 
 function buildTeamRecord(
   summary: string,
   stats: Record<string, number>,
   sport: Sport,
+  venueRecords: Pick<TeamRecord, 'homeRecord' | 'awayRecord'> = {},
 ): TeamRecord {
   let winPct = formatWinPct(stats.winPercent);
   if (winPct === '—' && sport === 'MLS' && stats.gamesPlayed > 0) {
@@ -93,6 +110,7 @@ function buildTeamRecord(
     winPct,
     points: formatPoints(stats, sport),
     streak: formatStreak(stats),
+    ...venueRecords,
   };
 }
 
@@ -107,12 +125,14 @@ function parseTeamRecord(
   teamDetailRecord: { items?: EspnRecordItem[] } | null | undefined,
   sport: Sport,
 ): TeamRecord {
+  const venueRecords = extractVenueRecords(teamDetailRecord?.items);
+
   if (teamDetailRecord?.items?.length) {
     const overall =
       teamDetailRecord.items.find((i) => i.type === 'total') ?? teamDetailRecord.items[0];
     const summary = overall.summary ?? overallSummary ?? '—';
     const stats = Object.fromEntries((overall.stats ?? []).map((s) => [s.name, s.value]));
-    return buildTeamRecord(summary, stats, sport);
+    return buildTeamRecord(summary, stats, sport, venueRecords);
   }
 
   const summary = overallSummary ?? '—';
@@ -121,6 +141,7 @@ function parseTeamRecord(
     winPct: winPctFromRecordSummary(summary, sport),
     points: '—',
     streak: '—',
+    ...venueRecords,
   };
 }
 
@@ -145,24 +166,47 @@ function needsRecordEnrichment(record: TeamRecord, sport: Sport): boolean {
   return false;
 }
 
+async function applyScheduleStreak(
+  team: TeamSummary,
+  sport: Sport,
+  teamsUrl: string,
+): Promise<TeamSummary> {
+  const streak = await fetchTeamStreak(team.id, teamsUrl, sport);
+  if (streak === '—') return team;
+  return { ...team, record: { ...team.record, streak } };
+}
+
+function needsVenueRecordEnrichment(record: TeamRecord): boolean {
+  return !record.homeRecord || !record.awayRecord;
+}
+
 async function enrichTeam(
   team: TeamSummary,
   sport: EspnCachedSport,
   teamsUrl: string,
 ): Promise<TeamSummary> {
-  if (sport === 'NHL') {
+  let enriched = team;
+
+  if (isFootballSport(sport)) {
+    const venue = await fetchFootballVenueRecord(team.id, teamsUrl);
+    enriched = {
+      ...enriched,
+      record: {
+        ...enriched.record,
+        homeRecord: venue.home,
+        awayRecord: venue.away,
+      },
+    };
+  } else if (
+    sport === 'NHL' ||
+    needsRecordEnrichment(team.record, sport) ||
+    needsVenueRecordEnrichment(team.record)
+  ) {
     const detail = await fetchTeamDetailRecord(teamsUrl, team.id);
-    const record = parseTeamRecord(team.record.overall, detail, sport);
-    return { ...team, record };
+    enriched = { ...enriched, record: parseTeamRecord(team.record.overall, detail, sport) };
   }
 
-  if (!needsRecordEnrichment(team.record, sport)) {
-    return team;
-  }
-
-  const detail = await fetchTeamDetailRecord(teamsUrl, team.id);
-  const record = parseTeamRecord(team.record.overall, detail, sport);
-  return { ...team, record };
+  return applyScheduleStreak(enriched, sport, teamsUrl);
 }
 
 export async function enrichMatchTeamRecords(match: {

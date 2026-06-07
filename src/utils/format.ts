@@ -41,6 +41,10 @@ export function sportMaxTeams(sport: string): number {
       return 362;
     case 'NCAAW':
       return 361;
+    case 'NCAAF':
+      return 136;
+    case 'NFL':
+      return 32;
     case 'NHL':
       return 32;
     case 'MLS':
@@ -48,6 +52,6 @@ export function sportMaxTeams(sport: string): number {
     case 'MLB':
       return 30;
     default:
-      return 32;
+      return 30;
   }
 }

@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        league: [NFL, MLB, NHL, MLS]
+        league: [NFL, NCAAF, MLB, NHL, MLS]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

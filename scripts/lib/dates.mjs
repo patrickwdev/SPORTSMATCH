@@ -18,6 +18,27 @@ export function toISODateLocal(date) {
   return `${y}-${m}-${d}`;
 }
 
+const ESPN_GAME_DATE_TZ = 'America/New_York';
+
+/** Calendar date (YYYY-MM-DD) in US Eastern — matches stored `game_date`. */
+export function toISODateEastern(date = new Date()) {
+  return date.toLocaleDateString('en-CA', { timeZone: ESPN_GAME_DATE_TZ });
+}
+
+/** @param {string} isoDate YYYY-MM-DD @param {number} days */
+export function addDaysToIso(isoDate, days) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  const next = new Date(y, m - 1, d);
+  next.setDate(next.getDate() + days);
+  return toISODateLocal(next);
+}
+
+/** @param {string} isoDate YYYY-MM-DD */
+export function dateFromIso(isoDate) {
+  const [y, m, d] = isoDate.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 /** ESPN scoreboard `dates` param: YYYYMMDD */
 export function toEspnDateParam(date) {
   const y = date.getFullYear();

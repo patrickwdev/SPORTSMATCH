@@ -8,6 +8,17 @@ import {
 import { applyTeamLookup, teamColor } from './espn-team-utils.mjs';
 import { winPctFromRecordSummary } from './espn-team-record.mjs';
 
+/** @param {unknown} score */
+export function parseEspnScore(score) {
+  if (score == null) return null;
+  if (typeof score === 'object' && score !== null && 'value' in score) {
+    const n = Number.parseInt(String(score.value), 10);
+    return Number.isNaN(n) ? null : n;
+  }
+  const n = Number.parseInt(String(score), 10);
+  return Number.isNaN(n) ? null : n;
+}
+
 /** @param {string} espnStatusName */
 export function mapGameStatus(espnStatusName) {
   switch (espnStatusName) {
@@ -120,11 +131,11 @@ export function createEspnScheduleApi(config) {
     const statusDetail =
       statusType.shortDetail ?? statusType.detail ?? statusType.description ?? null;
 
-    const awayScoreRaw = away.score;
-    const homeScoreRaw = home.score;
+    const awayScore = parseEspnScore(away.score);
+    const homeScore = parseEspnScore(home.score);
     const hasScore =
-      awayScoreRaw !== undefined &&
-      homeScoreRaw !== undefined &&
+      awayScore !== null &&
+      homeScore !== null &&
       gameStatus !== 'scheduled' &&
       statusName !== 'STATUS_SCHEDULED' &&
       statusName !== 'STATUS_NOT_STARTED';
@@ -146,8 +157,8 @@ export function createEspnScheduleApi(config) {
       stats: [],
       game_status: gameStatus,
       status_detail: statusDetail,
-      away_score: hasScore ? Number.parseInt(String(awayScoreRaw), 10) : null,
-      home_score: hasScore ? Number.parseInt(String(homeScoreRaw), 10) : null,
+      away_score: hasScore ? awayScore : null,
+      home_score: hasScore ? homeScore : null,
       source: 'espn',
       synced_at: new Date().toISOString(),
     };
@@ -186,9 +197,12 @@ export function createEspnScheduleApi(config) {
 
   /** @param {Date} date @param {Map<string, object> | undefined} teamLookup */
   async function fetchScoreboardForDate(date, teamLookup) {
-    const dayIso = toISODateLocal(date);
+    const localDayIso = toISODateLocal(date);
+    const easternDayIso = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
     const rows = await fetchScoreboardForRange(date, date, teamLookup);
-    return rows.filter((row) => row.game_date === dayIso);
+    return rows.filter(
+      (row) => row.game_date === localDayIso || row.game_date === easternDayIso,
+    );
   }
 
   /** @param {number} [days] @param {Date} [anchor] @param {Map<string, object> | undefined} teamLookup */
@@ -201,7 +215,9 @@ export function createEspnScheduleApi(config) {
 
     if (scheduleStrategy === 'range') {
       const fetchEnd = new Date(start);
-      fetchEnd.setDate(fetchEnd.getDate() + rangeLookaheadDays - 1);
+      // Fetch at least through the full sync window (sparse leagues: MLS, NCAAF, NFL).
+      const lookAheadDays = Math.max(rangeLookaheadDays, days);
+      fetchEnd.setDate(fetchEnd.getDate() + lookAheadDays - 1);
       const rows = await fetchScoreboardForRange(start, fetchEnd, teamLookup);
       const byId = new Map();
       for (const row of rows) {

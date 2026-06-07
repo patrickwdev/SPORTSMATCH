@@ -1,7 +1,13 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { Match } from '../types';
 import { colors } from '../theme/colors';
-import { formatMatchMeta, formatScoreLine, hasLiveScore } from '../utils/gameStatus';
+import {
+  formatMatchMeta,
+  formatScoreLine,
+  isFinalGame,
+  isLiveGame,
+  shouldShowScore,
+} from '../utils/gameStatus';
 import { TeamBadge } from './TeamBadge';
 
 interface Props {
@@ -23,8 +29,16 @@ export function MatchCard({ match, onPress }: Props) {
       <Text style={styles.matchup}>
         {match.awayTeam.name} vs {match.homeTeam.name}
       </Text>
-      {hasLiveScore(match) && (
-        <Text style={styles.score}>{formatScoreLine(match)}</Text>
+      {shouldShowScore(match) && (
+        <Text
+          style={[
+            styles.score,
+            isLiveGame(match) && styles.scoreLive,
+            isFinalGame(match) && styles.scoreFinal,
+          ]}
+        >
+          {formatScoreLine(match)}
+        </Text>
       )}
       <Text style={styles.meta}>{formatMatchMeta(match)}</Text>
     </Pressable>
@@ -65,6 +79,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     marginBottom: 4,
+  },
+  scoreLive: {
+    color: colors.green,
+  },
+  scoreFinal: {
+    color: colors.text,
   },
   meta: {
     color: colors.textMuted,

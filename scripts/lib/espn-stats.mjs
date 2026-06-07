@@ -3,6 +3,7 @@
  */
 
 import { extractNbaGameTotalsValue, fetchNbaGameTotals } from './espn-nba-game-totals.mjs';
+import { extractFootballGameTotalsValue, fetchFootballGameTotals } from './espn-football-game-totals.mjs';
 import {
   extractNhlGameTotalsValue,
   extractNhlRecordSplitValue,
@@ -11,6 +12,130 @@ import {
 } from './espn-nhl-splits.mjs';
 
 const BASKETBALL_GAME_LOG_SPORTS = new Set(['NBA', 'WNBA', 'NCAAB', 'NCAAW']);
+const FOOTBALL_GAME_LOG_SPORTS = new Set(['NFL', 'NCAAF']);
+
+const FOOTBALL_STAT_DEFS = [
+  { id: '1', label: 'PPG', category: 'scoring', name: 'totalPointsPerGame', footballGameLog: 'pointsFor' },
+  {
+    id: '2',
+    label: 'PPG/A',
+    category: 'scoring',
+    name: 'totalPointsPerGame',
+    opponent: true,
+    lowerIsBetter: true,
+    footballGameLog: 'pointsAgainst',
+  },
+  {
+    id: '3',
+    label: 'Pass YPG',
+    category: 'passing',
+    name: 'netPassingYardsPerGame',
+    footballGameLog: 'netPassingYards',
+  },
+  {
+    id: '4',
+    label: 'Pass YPG/A',
+    category: 'passing',
+    name: 'netPassingYardsPerGame',
+    opponent: true,
+    lowerIsBetter: true,
+    footballGameLog: 'oppNetPassingYards',
+  },
+  {
+    id: '5',
+    label: 'Yards/Pass',
+    category: 'passing',
+    name: 'yardsPerPassAttempt',
+    footballGameLog: 'yardsPerPass',
+  },
+  {
+    id: '6',
+    label: 'QB Comp%',
+    category: 'passing',
+    name: 'completionPct',
+    format: 'percent',
+    scale: 0.01,
+    footballGameLog: 'completionPct',
+  },
+  {
+    id: '7',
+    label: 'Rush YPG',
+    category: 'rushing',
+    name: 'rushingYardsPerGame',
+    footballGameLog: 'rushingYards',
+  },
+  {
+    id: '8',
+    label: 'Rush YPG/A',
+    category: 'rushing',
+    name: 'rushingYardsPerGame',
+    opponent: true,
+    lowerIsBetter: true,
+    footballGameLog: 'oppRushingYards',
+  },
+  {
+    id: '9',
+    label: 'Yards/Rush',
+    category: 'rushing',
+    name: 'yardsPerRushAttempt',
+    footballGameLog: 'yardsPerRush',
+  },
+  {
+    id: '10',
+    label: '3rdDown%',
+    category: 'miscellaneous',
+    name: 'thirdDownConvPct',
+    format: 'percent',
+    scale: 0.01,
+    footballGameLog: 'thirdDownPct',
+  },
+  {
+    id: '11',
+    label: '3rdDown%/A',
+    category: 'miscellaneous',
+    name: 'thirdDownConvPct',
+    opponent: true,
+    lowerIsBetter: true,
+    format: 'percent',
+    scale: 0.01,
+    footballGameLog: 'oppThirdDownPct',
+  },
+  {
+    id: '12',
+    label: '4thDown%',
+    category: 'miscellaneous',
+    name: 'fourthDownConvPct',
+    format: 'percent',
+    scale: 0.01,
+    footballGameLog: 'fourthDownPct',
+  },
+  {
+    id: '13',
+    label: 'Turnovers/G',
+    category: 'miscellaneous',
+    name: 'totalGiveaways',
+    perGame: true,
+    lowerIsBetter: true,
+    footballGameLog: 'giveaways',
+  },
+  {
+    id: '14',
+    label: 'TakeAway/G',
+    category: 'miscellaneous',
+    name: 'totalTakeaways',
+    perGame: true,
+    footballGameLog: 'takeaways',
+  },
+  {
+    id: '15',
+    label: 'PenYards/G',
+    category: 'miscellaneous',
+    name: 'totalPenaltyYards',
+    perGame: true,
+    lowerIsBetter: true,
+    footballGameLog: 'penaltyYards',
+  },
+];
 
 const BASKETBALL_STAT_DEFS = [
   {
@@ -57,20 +182,12 @@ export const ESPN_STAT_LEAGUES = {
   NFL: {
     sport: 'NFL',
     teamsUrl: 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams',
-    stats: [
-      { id: '1', label: 'Points/G', category: 'scoring', name: 'totalPointsPerGame' },
-      { id: '2', label: 'Opp Pts/G', category: 'scoring', name: 'totalPointsPerGame', opponent: true, lowerIsBetter: true },
-      { id: '3', label: 'Pass Yds/G', category: 'passing', name: 'netPassingYardsPerGame' },
-      { id: '4', label: 'Rush Yds/G', category: 'rushing', name: 'rushingYardsPerGame' },
-      { id: '5', label: 'Total Yds/G', category: 'miscellaneous', name: 'yardsPerGame' },
-      { id: '6', label: 'Opp Rush/G', category: 'rushing', name: 'rushingYardsPerGame', opponent: true, lowerIsBetter: true },
-      { id: '7', label: '3rd Down %', category: 'miscellaneous', name: 'thirdDownConvPct', format: 'percent', scale: 0.01 },
-      { id: '8', label: 'Red Zone %', category: 'miscellaneous', name: 'redzoneScoringPct', format: 'percent', scale: 0.01 },
-      { id: '9', label: 'Turnovers/G', category: 'passing', name: 'interceptions', perGame: true, lowerIsBetter: true },
-      { id: '10', label: 'Sacks/G', category: 'defensive', name: 'sacks', perGame: true },
-      { id: '11', label: 'Penalties/G', category: 'miscellaneous', name: 'totalPenalties', perGame: true, lowerIsBetter: true },
-      { id: '12', label: 'TOP (min)', category: 'miscellaneous', name: 'possessionTimeSeconds', perGame: true, scale: 1 / 60 },
-    ],
+    stats: FOOTBALL_STAT_DEFS,
+  },
+  NCAAF: {
+    sport: 'NCAAF',
+    teamsUrl: 'https://site.api.espn.com/apis/site/v2/sports/football/college-football/teams',
+    stats: FOOTBALL_STAT_DEFS,
   },
   NBA: {
     sport: 'NBA',
@@ -190,6 +307,14 @@ function extractStatValue(bundle, def, split) {
     const value = extractNbaGameTotalsValue(bundle.nbaGameTotals, split, def.nbaGameLog);
     if (value != null) return value;
   }
+  if (def.footballGameLog && bundle.footballGameTotals) {
+    const value = extractFootballGameTotalsValue(
+      bundle.footballGameTotals,
+      split,
+      def.footballGameLog,
+    );
+    if (value != null) return value;
+  }
 
   if (def.recordName) {
     const value = bundle.record?.[def.recordName];
@@ -274,7 +399,14 @@ async function fetchTeamRecord(teamsUrl, teamId) {
 /** @param {string} sport @param {number} season @param {number|null} value @param {boolean} gameLogSource */
 function columnDisplayValue(sport, season, value, gameLogSource) {
   if (value != null) return value;
-  if ((sport === 'NHL' || BASKETBALL_GAME_LOG_SPORTS.has(sport)) && gameLogSource) return null;
+  if (
+    (sport === 'NHL' ||
+      BASKETBALL_GAME_LOG_SPORTS.has(sport) ||
+      FOOTBALL_GAME_LOG_SPORTS.has(sport)) &&
+    gameLogSource
+  ) {
+    return null;
+  }
   return season;
 }
 
@@ -283,13 +415,16 @@ async function fetchTeamStatsBundle(teamsUrl, teamId, sport) {
   const needsRecord = BASKETBALL_GAME_LOG_SPORTS.has(sport) || sport === 'MLS';
   const isNhl = sport === 'NHL';
   const usesBasketballGameLog = BASKETBALL_GAME_LOG_SPORTS.has(sport);
-  const [statsRes, record, nhlRecordSplits, nhlGameTotals, nbaGameTotals] = await Promise.all([
-    fetch(`${teamsUrl}/${teamId}/statistics?enable=split`, { headers: FETCH_HEADERS }),
-    needsRecord ? fetchTeamRecord(teamsUrl, teamId) : Promise.resolve(null),
-    isNhl ? fetchNhlRecordSplits(teamsUrl, teamId) : Promise.resolve(null),
-    isNhl ? fetchNhlGameTotals(teamId, teamsUrl) : Promise.resolve(null),
-    usesBasketballGameLog ? fetchNbaGameTotals(teamId, teamsUrl) : Promise.resolve(null),
-  ]);
+  const usesFootballGameLog = FOOTBALL_GAME_LOG_SPORTS.has(sport);
+  const [statsRes, record, nhlRecordSplits, nhlGameTotals, nbaGameTotals, footballGameTotals] =
+    await Promise.all([
+      fetch(`${teamsUrl}/${teamId}/statistics?enable=split`, { headers: FETCH_HEADERS }),
+      needsRecord ? fetchTeamRecord(teamsUrl, teamId) : Promise.resolve(null),
+      isNhl ? fetchNhlRecordSplits(teamsUrl, teamId) : Promise.resolve(null),
+      isNhl ? fetchNhlGameTotals(teamId, teamsUrl) : Promise.resolve(null),
+      usesBasketballGameLog ? fetchNbaGameTotals(teamId, teamsUrl) : Promise.resolve(null),
+      usesFootballGameLog ? fetchFootballGameTotals(teamId, teamsUrl) : Promise.resolve(null),
+    ]);
 
   let season = null;
   let home = null;
@@ -317,6 +452,7 @@ async function fetchTeamStatsBundle(teamsUrl, teamId, sport) {
     record,
     ...(isNhl ? { nhlRecordSplits, nhlGameTotals } : {}),
     ...(usesBasketballGameLog ? { nbaGameTotals } : {}),
+    ...(usesFootballGameLog ? { footballGameTotals } : {}),
   };
 }
 
@@ -356,25 +492,25 @@ export function buildMatchStatsFromCache(sport, awayTeamId, homeTeamId, cache) {
         sport,
         awaySeason,
         extractStatValue(away, def, 'away'),
-        !!(def.nhlRecordSplit || def.nbaGameLog),
+        !!(def.nhlRecordSplit || def.nbaGameLog || def.footballGameLog),
       );
       const homeSplit = columnDisplayValue(
         sport,
         homeSeason,
         extractStatValue(home, def, 'home'),
-        !!(def.nhlRecordSplit || def.nbaGameLog),
+        !!(def.nhlRecordSplit || def.nbaGameLog || def.footballGameLog),
       );
       const awayLast5 = columnDisplayValue(
         sport,
         awaySeason,
         extractStatValue(away, def, 'last7'),
-        !!(def.nhlLast5 || def.nbaGameLog),
+        !!(def.nhlLast5 || def.nbaGameLog || def.footballGameLog),
       );
       const homeLast5 = columnDisplayValue(
         sport,
         homeSeason,
         extractStatValue(home, def, 'last7'),
-        !!(def.nhlLast5 || def.nbaGameLog),
+        !!(def.nhlLast5 || def.nbaGameLog || def.footballGameLog),
       );
 
       return {

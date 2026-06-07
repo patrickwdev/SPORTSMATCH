@@ -1,6 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -12,50 +12,118 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DayPicker } from '../components/DayPicker';
 import { MatchCard } from '../components/MatchCard';
+import { dayPickerBackwardDays, dayPickerForwardDays } from '../constants/sports';
 import { isSupabaseConfigured } from '../data/matchesApi';
 import { useMatchesForSport } from '../hooks/useMatchesForSport';
 import type { RootStackParamList } from '../navigation/types';
 import { colors } from '../theme/colors';
 import {
+  buildMatchDayPickerOptions,
+  dateFromIso,
+  defaultMatchDayIso,
   formatSelectedDayLabel,
-  getNext7DayOptions,
-  toISODateLocal,
+  todayIsoForSport,
 } from '../utils/dates';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Matches'>;
 
 export function MatchesScreen({ navigation, route }: Props) {
   const { sport } = route.params;
-  const { matches, loading, error, refetch } = useMatchesForSport(sport);
-  const dayOptions = useMemo(() => getNext7DayOptions(), []);
-  const [selectedDate, setSelectedDate] = useState(() => toISODateLocal(new Date()));
+  const { matches, loading, refreshing, error, refetch } = useMatchesForSport(sport);
+  const forwardDays = dayPickerForwardDays(sport);
+  const backwardDays = dayPickerBackwardDays(sport);
+  const todayIso = todayIsoForSport(sport);
+  const dayOptions = useMemo(
+    () =>
+      buildMatchDayPickerOptions(matches, {
+        forwardDays,
+        backwardDays,
+        anchor: dateFromIso(todayIso),
+        sport,
+      }),
+    [matches, forwardDays, backwardDays, todayIso],
+  );
+  const [selectedDate, setSelectedDate] = useState(() => todayIsoForSport(sport));
+  const [userPickedDate, setUserPickedDate] = useState(false);
+
+  useEffect(() => {
+    setSelectedDate(todayIsoForSport(sport));
+    setUserPickedDate(false);
+  }, [sport]);
+
+  useEffect(() => {
+    if (userPickedDate || loading) return;
+    const preferred = matches.length > 0 ? defaultMatchDayIso(matches, sport) : todayIso;
+    setSelectedDate(preferred);
+  }, [todayIso, matches, sport, userPickedDate, loading]);
+
+  const activeDate = useMemo(() => {
+    if (userPickedDate) return selectedDate;
+    if (matches.length === 0) return selectedDate;
+    return defaultMatchDayIso(matches, sport);
+  }, [userPickedDate, selectedDate, matches, sport]);
+
+  useEffect(() => {
+    if (loading || userPickedDate) return;
+    if (activeDate !== selectedDate) {
+      setSelectedDate(activeDate);
+    }
+  }, [loading, userPickedDate, activeDate, selectedDate]);
+
+  useEffect(() => {
+    if (
+      userPickedDate &&
+      dayOptions.length > 0 &&
+      !dayOptions.some((d) => d.isoDate === selectedDate)
+    ) {
+      const preferred =
+        matches.length > 0 ? defaultMatchDayIso(matches, sport) : todayIso;
+      setSelectedDate(preferred);
+      setUserPickedDate(false);
+    }
+  }, [userPickedDate, dayOptions, selectedDate, matches, sport, todayIso]);
+
+  const handleSelectDate = useCallback((isoDate: string) => {
+    setUserPickedDate(true);
+    setSelectedDate(isoDate);
+  }, []);
 
   const displayedMatches = useMemo(
-    () => matches.filter((m) => m.gameDate === selectedDate),
-    [matches, selectedDate],
+    () => matches.filter((m) => m.gameDate === activeDate),
+    [matches, activeDate],
   );
 
-  const headerSubtitle = formatSelectedDayLabel(selectedDate);
+  const headerSubtitle = formatSelectedDayLabel(activeDate, todayIso);
 
-  const hasLiveGamesToday = useMemo(
-    () =>
-      matches.some(
-        (m) =>
-          m.gameDate === selectedDate &&
-          (m.gameStatus === 'in_progress' || m.gameStatus === 'scheduled'),
-      ),
-    [matches, selectedDate],
-  );
+  const shouldRefreshLiveScores = useMemo(() => {
+    const matchNeedsScoreUpdate = (m: (typeof matches)[number]) => {
+      if (m.gameStatus === 'canceled' || m.gameStatus === 'postponed') return false;
+      if (
+        m.gameStatus === 'in_progress' ||
+        m.gameStatus === 'delayed' ||
+        m.gameStatus === 'suspended'
+      ) {
+        return true;
+      }
+      if (m.awayScore == null || m.homeScore == null) return true;
+      return m.gameStatus !== 'final';
+    };
+
+    const dayMatches = matches.filter((m) => m.gameDate === activeDate);
+    if (dayMatches.some(matchNeedsScoreUpdate)) return true;
+    return matches.some((m) => m.gameStatus === 'in_progress');
+  }, [matches, activeDate]);
 
   useFocusEffect(
     useCallback(() => {
-      if (!hasLiveGamesToday) return;
+      if (!shouldRefreshLiveScores) return;
+      refetch();
       const interval = setInterval(() => refetch(), 60_000);
       return () => clearInterval(interval);
-    }, [hasLiveGamesToday, refetch]),
+    }, [shouldRefreshLiveScores, refetch]),
   );
 
-  if (loading) {
+  if (loading && matches.length === 0) {
     return (
       <SafeAreaView style={styles.centered} edges={['bottom']}>
         <ActivityIndicator size="large" color={colors.infoBar} />
@@ -83,19 +151,28 @@ export function MatchesScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <View style={styles.header}>
-        <Text style={styles.sport}>{sport}</Text>
-        <Text style={styles.week}>{headerSubtitle}</Text>
+      <View style={styles.topSection}>
+        <View style={styles.header}>
+          <Text style={styles.sport}>{sport}</Text>
+          <View style={styles.weekRow}>
+            <Text style={styles.week}>{headerSubtitle}</Text>
+            {refreshing ? (
+              <ActivityIndicator size="small" color={colors.infoBar} style={styles.weekSpinner} />
+            ) : null}
+          </View>
+        </View>
+        <DayPicker
+          days={dayOptions}
+          selectedDate={activeDate}
+          onSelect={handleSelectDate}
+        />
       </View>
-      <DayPicker
-        days={dayOptions}
-        selectedDate={selectedDate}
-        onSelect={setSelectedDate}
-      />
       <FlatList
+        style={styles.list}
         data={displayedMatches}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <MatchCard
             match={item}
@@ -122,24 +199,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
   },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  topSection: {
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    zIndex: 1,
+    elevation: 2,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   sport: {
     color: colors.text,
     fontSize: 24,
     fontWeight: '800',
   },
+  weekRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 8,
+  },
   week: {
     color: colors.textMuted,
     fontSize: 14,
-    marginTop: 4,
+  },
+  weekSpinner: {
+    transform: [{ scale: 0.85 }],
   },
   list: {
-    padding: 16,
+    flex: 1,
+    minHeight: 0,
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 24,
+    flexGrow: 1,
   },
   empty: {
     color: colors.textMuted,

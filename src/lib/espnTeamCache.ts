@@ -11,6 +11,7 @@ export type EspnTeamRow = {
 
 export type EspnTeamTable =
   | 'nfl_teams'
+  | 'ncaaf_teams'
   | 'mlb_teams'
   | 'nba_teams'
   | 'nhl_teams'

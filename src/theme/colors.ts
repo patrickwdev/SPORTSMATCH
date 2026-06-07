@@ -11,4 +11,6 @@ export const colors = {
   yellow: '#eab308',
   red: '#ef4444',
   accent: '#3b82f6',
+  tabActive: '#f97316',
+  cardBorder: '#2563eb',
 };

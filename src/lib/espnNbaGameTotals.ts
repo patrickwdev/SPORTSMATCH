@@ -269,7 +269,7 @@ export async function fetchNbaGameTotals(
   for (const event of events as Array<{
     id: string;
     competitions: Array<{
-      competitors: Array<{ team?: { id?: string; homeAway?: string }; score?: unknown }>;
+      competitors: Array<{ team?: { id?: string }; homeAway?: string; score?: unknown }>;
     }>;
   }>) {
     const comp = event.competitions[0];

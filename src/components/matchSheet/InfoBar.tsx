@@ -1,7 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
 import type { Match } from '../../types';
 import { colors } from '../../theme/colors';
-import { formatGameStatusLabel, hasLiveScore } from '../../utils/gameStatus';
+import {
+  formatGameStatusLabel,
+  formatScoreLine,
+  isFinalGame,
+  isLiveGame,
+  shouldShowScore,
+} from '../../utils/gameStatus';
+import { isFootballSport } from '../../utils/sport';
 
 interface Props {
   match: Match;
@@ -9,17 +16,40 @@ interface Props {
 
 export function InfoBar({ match }: Props) {
   const statusLabel = formatGameStatusLabel(match.gameStatus);
+  const scoreLine = shouldShowScore(match) ? formatScoreLine(match) : null;
+
+  if (isFootballSport(match.sport)) {
+    const kickoff =
+      isLiveGame(match) || isFinalGame(match)
+        ? (match.statusDetail ?? statusLabel)
+        : `Kickoff: ${match.startTime}`;
+
+    return (
+      <View style={styles.footballBar}>
+        <Text style={styles.footballLine} numberOfLines={2}>
+          {scoreLine ?? kickoff}
+        </Text>
+        {match.weather ? (
+          <Text style={styles.footballLine} numberOfLines={2}>
+            Weather: {match.weather}
+          </Text>
+        ) : null}
+        <Text style={styles.footballLine} numberOfLines={2}>
+          Location: {match.location}
+        </Text>
+      </View>
+    );
+  }
+
   const startLabel =
-    match.gameStatus === 'in_progress' || match.gameStatus === 'final'
-      ? match.statusDetail ?? statusLabel
+    isLiveGame(match) || isFinalGame(match)
+      ? (match.statusDetail ?? statusLabel)
       : `Match Starts: ${match.startTime}`;
 
   return (
     <View style={styles.bar}>
       <Text style={styles.side} numberOfLines={1}>
-        {hasLiveScore(match)
-          ? `${match.awayTeam.abbreviation} ${match.awayScore} – ${match.homeScore} ${match.homeTeam.abbreviation}`
-          : startLabel}
+        {scoreLine ?? startLabel}
       </Text>
       <Text style={styles.center}>Statistical Matchup Information</Text>
       <Text style={[styles.side, styles.right]} numberOfLines={1}>
@@ -36,6 +66,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 6,
     alignItems: 'center',
+  },
+  footballBar: {
+    backgroundColor: colors.infoBar,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    gap: 4,
+  },
+  footballLine: {
+    color: colors.text,
+    fontSize: 11,
+    textAlign: 'center',
   },
   side: {
     flex: 1,

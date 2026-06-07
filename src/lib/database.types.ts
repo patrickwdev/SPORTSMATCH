@@ -1,5 +1,4 @@
 import type { GameStatus, Match, Sport, StatRow, TeamSummary } from '../types';
-import { toISODateLocal } from '../utils/dates';
 
 export type MatchRow = {
   id: string;
@@ -47,12 +46,13 @@ export function rowToMatch(row: MatchRow): Match {
     startTime: row.start_time,
     location: row.location,
     weekLabel: row.week_label,
-    gameDate: row.game_date ?? toISODateLocal(new Date()),
+    gameDate: row.game_date ?? '',
     gameStatus: (row.game_status as GameStatus | null) ?? undefined,
     statusDetail: row.status_detail,
     awayScore: row.away_score,
     homeScore: row.home_score,
     source: row.source === 'espn' ? 'espn' : 'seed',
+    espnEventId: row.espn_event_id,
     stats: row.stats,
   };
 }
